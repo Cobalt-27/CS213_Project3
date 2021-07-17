@@ -29,7 +29,6 @@ public class CourseServiceImplementation implements CourseService {
                           int credit, int classHour,
                           Course.CourseGrading grading,
                           @Nullable Prerequisite coursePrerequisite) {
-
         courseId = courseId.replace("-",replace);
         try (Connection connection = SQLDataSource.getInstance().getSQLConnection();
              PreparedStatement stmt = connection.prepareStatement("select add_Course(?,?,?,?,?)")//todo prerequisite
@@ -53,21 +52,69 @@ public class CourseServiceImplementation implements CourseService {
                     prerequisite.executeBatch();
                 }
             }
-
         } catch (SQLException e) {
 //            System.out.println(courseId);
 //            e.printStackTrace();
             throw new IntegrityViolationException();
         }
-
-
     }
 
 
-    // to do
-    public void addPrerequisite(PreparedStatement preparedStatement,Prerequisite prerequisite, String path, String courseId, int level, int no){
-        // to do
 
+
+    public void addPrerequisite(PreparedStatement preparedStatement,
+                                Prerequisite prerequisite,
+                                String path,
+                                String courseId,
+                                int level,
+                                int no){
+        courseId = courseId.replace("-",replace);
+        if (prerequisite == null) return;
+        level = level + 1;
+        if (prerequisite instanceof AndPrerequisite){
+            path += (".and"+no);
+            int i = 1;
+            try {
+                preparedStatement.setString(1,courseId);
+                preparedStatement.setString(2,path);
+                preparedStatement.setInt(3,level);
+                preparedStatement.setInt(4, no);
+                preparedStatement.addBatch();
+            } catch (SQLException throwables) {
+                throwables.printStackTrace();
+            }
+            for (Prerequisite tmp : ((AndPrerequisite) prerequisite).terms){
+                addPrerequisite(preparedStatement,tmp,path,courseId,level,i);
+                i++;
+            }
+        }else if (prerequisite instanceof OrPrerequisite){
+            path += (".or"+no);
+            int i = 1;
+            try {
+                preparedStatement.setString(1,courseId);
+                preparedStatement.setString(2,path);
+                preparedStatement.setInt(3,level);
+                preparedStatement.setInt(4, no);
+                preparedStatement.addBatch();
+            } catch (SQLException throwables) {
+                throwables.printStackTrace();
+            }
+            for (Prerequisite tmp : ((OrPrerequisite) prerequisite).terms){
+                addPrerequisite(preparedStatement,tmp,path,courseId,level,i);
+                i++;
+            }
+        }else if (prerequisite instanceof CoursePrerequisite){
+            path += ("."+((CoursePrerequisite) prerequisite).courseID);
+            try {
+                preparedStatement.setString(1,courseId);
+                preparedStatement.setString(2,path);
+                preparedStatement.setInt(3,level);
+                preparedStatement.setInt(4, no);
+                preparedStatement.addBatch();
+            } catch (SQLException throwables) {
+                throwables.printStackTrace();
+            }
+        }
     }
 
     // to do
