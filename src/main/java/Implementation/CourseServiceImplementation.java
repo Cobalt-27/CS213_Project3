@@ -42,7 +42,7 @@ public class CourseServiceImplementation implements CourseService {
             stmt.execute();
             if(coursePrerequisite != null){
                 try (
-                        PreparedStatement prerequisite = 
+                        PreparedStatement prerequisite =
                                 connection.prepareStatement("insert into prerequisite (\"courseId\", path, level, \"No\") values (?,text2ltree(?),?,?)")
                 ){
                     String path = "Top."+courseId;
@@ -62,6 +62,7 @@ public class CourseServiceImplementation implements CourseService {
 
 
     }
+
 
     // to do
     public void addPrerequisite(PreparedStatement preparedStatement,Prerequisite prerequisite, String path, String courseId, int level, int no){
