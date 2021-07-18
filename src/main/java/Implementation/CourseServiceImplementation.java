@@ -123,22 +123,46 @@ public class CourseServiceImplementation implements CourseService {
 
         int result = 0;
 
-        // to do
-
-        return result; //done return courseSectionId
-
-
+        try (Connection connection = SQLDataSource.getInstance().getSQLConnection();
+             PreparedStatement stmt = connection.prepareStatement("select * from add_Section(?,?,?,?)");
+        )
+        {
+            stmt.setString(1,courseId);
+            stmt.setInt(2,semesterId);
+            stmt.setString(3,sectionName);
+            stmt.setInt(4,totalCapacity);
+            ResultSet res=stmt.executeQuery();
+            res.next();
+            result=res.getInt("add_Section");
+        }catch(Exception e){
+            throw new IntegrityViolationException();
+        }
+        return result;
     }
 
-    // to do
+
     @Override
     public int addCourseSectionClass(int sectionId, int instructorId,
                                      DayOfWeek dayOfWeek, Set<Short> weekList,
                                      short classStart, short classEnd,
                                      String location) {
         int result = 0;
-
-        // to do
+        try (Connection connection = SQLDataSource.getInstance().getSQLConnection();
+             PreparedStatement stmt = connection.prepareStatement("select * from add_Course_Section(?,?,?,?,?,?,?)");
+        ) {
+            stmt.setInt(1,sectionId);
+            stmt.setInt(2,instructorId);
+            stmt.setString(3, dayOfWeek.name());
+            stmt.setArray(4,connection.createArrayOf("smallint",weekList.toArray()));
+            stmt.setShort(5,classStart);
+            stmt.setShort(6,classEnd);
+            stmt.setString(7,location);
+            ResultSet res=stmt.executeQuery();
+            res.next();
+            result=res.getInt("add_Course_Section");
+        }catch(Exception e){
+            throw new IntegrityViolationException();
+        }
 
         return result;
     }
@@ -147,10 +171,26 @@ public class CourseServiceImplementation implements CourseService {
     // to do
     @Override
     public List<Course> getAllCourses() {
+        ArrayList<Course> ret=new ArrayList();
+        try (Connection connection = SQLDataSource.getInstance().getSQLConnection();
+             PreparedStatement stmt = connection.prepareStatement("select * from \"Course\"")
+        ) {
+            ResultSet res=stmt.executeQuery();
+            Course c=new Course();
+            while(res.next()){
+                c.id=res.getString("courseId");
+                c.classHour=res.getInt("classHour");
+                c.grading=res.getString("grading")=="HUNDRED_MARK_SCORE"? Course.CourseGrading.HUNDRED_MARK_SCORE: Course.CourseGrading.PASS_OR_FAIL;
+                c.credit=res.getInt("credit");
+                c.name=res.getString("courseName");
+                ret.add(c);
+                //System.out.println(c.name);
+            }
+        }catch(Exception e){
+            throw new EntityNotFoundException();
+        }
 
-        // to do
-
-        return List.of();
+        return ret;
     }
 
 }

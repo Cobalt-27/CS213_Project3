@@ -24,7 +24,19 @@ public class StudentServiceImplementation implements StudentService {
     // to do
     @Override
     public void addStudent(int userId, int majorId, String firstName, String lastName, Date enrolledDate) {
-        // to do
+        try (Connection connection = SQLDataSource.getInstance().getSQLConnection();
+             PreparedStatement stmt = connection.prepareStatement("select add_Student(?,?,?,?,?,?)")//todo prerequisite
+        ) {
+            stmt.setInt(1,userId);
+            stmt.setString(2,firstName+lastName);
+            stmt.setDate(3,enrolledDate);
+            stmt.setInt(4,majorId);
+            stmt.setString(5,firstName);
+            stmt.setString(6,lastName);
+            stmt.executeQuery();
+        }catch(Exception e){
+            throw new IntegrityViolationException();
+        }
     }
 
 
