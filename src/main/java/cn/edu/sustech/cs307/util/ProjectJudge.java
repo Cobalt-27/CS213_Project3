@@ -55,10 +55,14 @@ public final class ProjectJudge {
                     .collect(Collectors.toUnmodifiableList());
             result.elapsedTimeNs.addAndGet(System.nanoTime() - beforeTime);
             result.passCount.addAndGet(IntStream.range(0, searchCourseParams.size()).parallel()
-                    .filter(it -> searchCourseExpected.get(it).equals(searchCourseResult.get(it))).count());
+                    .filter(it -> (searchCourseExpected.get(it).equals(searchCourseResult.get(it)))).count());
         }
         return result;
     }
+//    public boolean SearchCourseJ(List<CourseSearchEntry it>){
+//        searchCourseExpected.get(it).equals(searchCourseResult.get(it)
+//        return false;
+//    }
 
     public List<CourseSearchEntry> testSearchCourse(List<Object> params) {
         try {
@@ -99,6 +103,9 @@ public final class ProjectJudge {
                 evalResult.elapsedTimeNs.addAndGet(System.nanoTime() - beforeTime);
                 if (expected == result) {
                     evalResult.passCount.incrementAndGet();
+                }
+                else{
+                    System.out.println(i+" "+expected+" "+result);
                 }
                 if (expected == StudentService.EnrollResult.SUCCESS) {
                     evalResult.succeedSections.add(enrollCourseParams.get(i));

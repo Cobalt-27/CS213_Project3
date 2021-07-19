@@ -56,6 +56,7 @@ public class StudentServiceImplementation implements StudentService {
                                                 boolean ignoreFull, boolean ignoreConflict,
                                                 boolean ignorePassed, boolean ignoreMissingPrerequisites,
                                                 int pageSize, int pageIndex) {
+
         // to do
         return List.of();
     }
@@ -65,7 +66,51 @@ public class StudentServiceImplementation implements StudentService {
     public EnrollResult enrollCourse(int studentId, int sectionId) {
 
         EnrollResult result = EnrollResult.UNKNOWN_ERROR;//TODO
-        // to do
+        //1 not found
+        //2 time conflict
+        //3 enrolled
+        //4 passed
+        //5 pre not meet
+        //6 full
+        try (Connection connection = SQLDataSource.getInstance().getSQLConnection();
+             PreparedStatement stmt = connection.prepareStatement("select enroll_Course(?,?)")//todo prerequisite
+        ) {
+            stmt.setInt(1,studentId);
+            stmt.setInt(2,sectionId);
+            ResultSet res=stmt.executeQuery();
+            res.next();
+            int ret=res.getInt("enroll_Course");
+            //System.out.println(ret);
+            switch(ret){
+                case 0:
+                    result=EnrollResult.SUCCESS;
+                    break;
+                case 1:
+                    result=EnrollResult.COURSE_NOT_FOUND;
+                    break;
+                case 2:
+                    result=EnrollResult.ALREADY_ENROLLED;
+                    break;
+                case 3:
+                    result=EnrollResult.ALREADY_PASSED;
+                    break;
+                case 4:
+                    result=EnrollResult.PREREQUISITES_NOT_FULFILLED;
+                    break;
+                case 5:
+                    result=EnrollResult.COURSE_CONFLICT_FOUND;
+                    break;
+                case 6:
+                    result=EnrollResult.COURSE_IS_FULL;
+                    break;
+                default:
+                    result=EnrollResult.UNKNOWN_ERROR;
+            }
+            //PreparedStatement stmt2 = connection.prepareStatement("select select \"path\",\"level\" from prerequisite where \"courseId\"=?");
+
+        }catch(Exception e){
+            System.out.println(e.getMessage());
+        }
         return result;
 
 
@@ -81,6 +126,24 @@ public class StudentServiceImplementation implements StudentService {
     @Override
     public void addEnrolledCourseWithGrade(int studentId, int sectionId, @Nullable Grade grade) {
         // to do
+        try (Connection connection = SQLDataSource.getInstance().getSQLConnection();
+             PreparedStatement stmt = connection.prepareStatement("select add_Enrolled_Course_With_Grade(?,?,?)")//todo prerequisite
+        ) {
+            stmt.setInt(1,studentId);
+            stmt.setInt(2,sectionId);
+            if(grade==null){
+                stmt.setString(3,null);
+            }
+            else {
+                String args3 = (grade instanceof HundredMarkGrade) ? Integer.toString(((HundredMarkGrade) grade).mark) : grade.toString();
+                //System.out.println(args3);
+                stmt.setString(3, args3);
+            }
+            stmt.executeQuery();
+        }catch(Exception e){
+            System.out.println(e.getMessage());
+            throw new IntegrityViolationException();
+        }
     }
 
     // to do

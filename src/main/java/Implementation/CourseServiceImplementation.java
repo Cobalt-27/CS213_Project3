@@ -120,7 +120,7 @@ public class CourseServiceImplementation implements CourseService {
     // to do
     @Override
     public int addCourseSection(String courseId, int semesterId, String sectionName, int totalCapacity) {
-
+        courseId = courseId.replace("-",replace);
         int result = 0;
 
         try (Connection connection = SQLDataSource.getInstance().getSQLConnection();
@@ -179,6 +179,7 @@ public class CourseServiceImplementation implements CourseService {
             Course c=new Course();
             while(res.next()){
                 c.id=res.getString("courseId");
+                c.id = c.id.replace(replace,"-");
                 c.classHour=res.getInt("classHour");
                 c.grading=res.getString("grading")=="HUNDRED_MARK_SCORE"? Course.CourseGrading.HUNDRED_MARK_SCORE: Course.CourseGrading.PASS_OR_FAIL;
                 c.credit=res.getInt("credit");
