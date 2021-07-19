@@ -101,10 +101,14 @@ public final class ProjectJudge {
                 long beforeTime = System.nanoTime();
                 StudentService.EnrollResult result = testEnrollCourse(enrollCourseParams.get(i));
                 evalResult.elapsedTimeNs.addAndGet(System.nanoTime() - beforeTime);
+                if(expected== StudentService.EnrollResult.COURSE_CONFLICT_FOUND){
+                    //System.out.println("c found");
+                }
                 if (expected == result) {
                     evalResult.passCount.incrementAndGet();
                 }
                 else{
+
                     System.out.println(i+" "+expected+" "+result);
                 }
                 if (expected == StudentService.EnrollResult.SUCCESS) {
