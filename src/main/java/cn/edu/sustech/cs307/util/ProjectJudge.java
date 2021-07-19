@@ -278,6 +278,8 @@ public final class ProjectJudge {
         System.out.println("Test drop course: " + dropCourse.passCount.get());
         System.out.printf("Test drop course time: %.2fs\n", dropCourse.elapsedTimeNs.get() / 1000000000.0);
 
+
+
         // 7. Test courseTable2
         EvalResult courseTables2 = testCourseTables(courseTable2Dir);
         System.out.println("Test course table 2: " + courseTables2.passCount.get());

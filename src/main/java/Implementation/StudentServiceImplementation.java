@@ -111,6 +111,7 @@ public class StudentServiceImplementation implements StudentService {
         }catch(Exception e){
             System.out.println(e.getMessage());
         }
+        //result=EnrollResult.SUCCESS;
         return result;
 
 
@@ -120,12 +121,29 @@ public class StudentServiceImplementation implements StudentService {
     @Override
     public void dropCourse(int studentId, int sectionId) {
         // to do
+        int t=0;
+        try (Connection connection = SQLDataSource.getInstance().getSQLConnection();
+             PreparedStatement stmt = connection.prepareStatement("select drop_Course(?,?)")//todo prerequisite
+        ) {
+            stmt.setInt(1,studentId);
+            stmt.setInt(2,sectionId);
+            ResultSet res=stmt.executeQuery();
+            res.next();
+            t=res.getInt("drop_Course");
+        }catch(Exception e){
+            throw new IllegalStateException();
+        }
+        if(t==1) {
+            System.out.print('1');
+            throw new IllegalStateException();
+        }
     }
 
     // to do
     @Override
     public void addEnrolledCourseWithGrade(int studentId, int sectionId, @Nullable Grade grade) {
         // to do
+        //System.out.println("Grade");
         try (Connection connection = SQLDataSource.getInstance().getSQLConnection();
              PreparedStatement stmt = connection.prepareStatement("select add_Enrolled_Course_With_Grade(?,?,?)")//todo prerequisite
         ) {
@@ -141,7 +159,7 @@ public class StudentServiceImplementation implements StudentService {
             }
             stmt.executeQuery();
         }catch(Exception e){
-            System.out.println(e.getMessage());
+            //System.out.println(e.getMessage());
             throw new IntegrityViolationException();
         }
     }
