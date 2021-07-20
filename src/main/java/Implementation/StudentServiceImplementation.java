@@ -57,6 +57,7 @@ public class StudentServiceImplementation implements StudentService {
                                                 boolean ignorePassed, boolean ignoreMissingPrerequisites,
                                                 int pageSize, int pageIndex) {
 
+
         // to do
         return List.of();
     }
@@ -66,12 +67,7 @@ public class StudentServiceImplementation implements StudentService {
     public EnrollResult enrollCourse(int studentId, int sectionId) {
 
         EnrollResult result = EnrollResult.UNKNOWN_ERROR;//TODO
-        //1 not found
-        //2 time conflict
-        //3 enrolled
-        //4 passed
-        //5 pre not meet
-        //6 full
+
         try (Connection connection = SQLDataSource.getInstance().getSQLConnection();
              PreparedStatement stmt = connection.prepareStatement("select enroll_Course(?,?)")//todo prerequisite
         ) {
@@ -134,7 +130,7 @@ public class StudentServiceImplementation implements StudentService {
             throw new IllegalStateException();
         }
         if(t==1) {
-            System.out.print('1');
+            //System.out.print('1');
             throw new IllegalStateException();
         }
     }

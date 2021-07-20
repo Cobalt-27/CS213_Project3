@@ -54,27 +54,30 @@ $$
         semid:=(select "semesterId" from "CourseSection" where "sectionId"=vsecid);
         cid:=(select "courseId" from "CourseSection" where "sectionId"=vsecid);
 
-        if((select count(*) from "student_section" join "CourseSection" C on student_section."sectionId" = C."sectionId" where C."sectionId"=vsecid and "studentId"=vstuid and C."semesterId"=semid)>0)
+        if((select count(*) from "student_section" join "CourseSection" C on student_section."sectionId" = C."sectionId" where C."sectionId"=vsecid and "studentId"=vstuid)>0)
         then return 2;--already enrolled
         end if;
 
 
         if((select count(*) from student_section ssec join "CourseSection" CS on ssec."sectionId" = CS."sectionId" where ssec."studentId"=vstuid and "courseId"=cid)>0)
         then grad=(select grade from student_section ssec join "CourseSection" CS on ssec."sectionId" = CS."sectionId" where ssec."studentId"=vstuid and "courseId"=cid);
-            if( grad='PASS' or cast(grad as integer)>=60)
+            if(grad='PASS' or cast(grad as integer)>=60)
                 then return 3;--passed
             end if;
         end if;
 
 --         CREATE TEMP TABLE IF NOT EXISTS prer as (select "path","level" from prerequisite where "courseId"=cid);
-        for rr in (select "path",level from prerequisite where "courseId"=cid)
-        loop
-            if((passed_prerequisites_for_course(vstuid,cid,rr.path,rr.level))=false)
+--         for rr in (select "path",level from prerequisite where "courseId"=cid)
+--         loop
+--             if((passed_prerequisites_for_course(vstuid,cid,rr.path,rr.level))=false)
+--             then
+--                 return 4;--pre not meet
+--             end if;
+--         end loop;
+            if((passed_prerequisites_for_course(vstuid,cid,null,0))=false)
             then
                 return 4;--pre not meet
             end if;
-        end loop;
---         drop table prer;
 
         if (
                (with cur as (
@@ -138,10 +141,48 @@ as
 $$
     begin
         if((select count(*) from student_section where "studentId"=vstuid and "sectionId"=vsecid)=0)
-            then perform enroll_Course(vstuid,vsecid);
+            then insert into student_section("studentId", "sectionId", grade) values (vstuid,vsecid,vgrade);
+            else
+--                 if((select grade from student_section where "studentId"=vstuid and "sectionId"=vsecid)is null)
+                    --update student_section set grade=vgrade where "studentId"=vstuid and "sectionId"=vsecid;
+--                 end if;
         end if;
-        update student_section set grade=vgrade where "studentId"=vstuid and "sectionId"=vsecid;
 
 
     end;
+$$;
+
+
+create or replace function drop_Course(vstuid int,vsecid int)
+returns int language plpgsql
+as
 $$
+    begin
+        if((select count(*)from student_section where "studentId"=vstuid and "sectionId"=vsecid)=0)
+        then
+            return 1;
+        end if;
+        if((select grade from student_section where "studentId"=vstuid and "sectionId"=vsecid) is not null)
+            then return 1;
+        end if;
+        delete from student_section where "studentId"=vstuid and "sectionId"=vsecid;
+        update "CourseSection" set "leftCapacity"="leftCapacity"+1 where "sectionId"=vsecid;
+        return 0;
+    end;
+$$;
+
+create or replace function search_Course(vstuid int,vsemid int,vcid varchar,vname varchar,vins varchar,vday varchar
+,vtime smallint,vloc varchar[],vtype varchar,igfull bool,igcon bool,igpass bool,igpre bool,vpgsize int,vpgidx int)
+returns table(
+    "courseId"   varchar,
+    "courseName" varchar,
+    credit       integer,
+    "classHour"  integer,
+    grading      varchar
+) language plpgsql
+as
+$$
+    begin
+
+    end;
+$$;
