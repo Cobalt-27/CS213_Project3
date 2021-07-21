@@ -144,7 +144,7 @@ $$
             then insert into student_section("studentId", "sectionId", grade) values (vstuid,vsecid,vgrade);
             else
 --                 if((select grade from student_section where "studentId"=vstuid and "sectionId"=vsecid)is null)
-                    --update student_section set grade=vgrade where "studentId"=vstuid and "sectionId"=vsecid;
+                update student_section set grade=vgrade where "studentId"=vstuid and "sectionId"=vsecid;
 --                 end if;
         end if;
 
@@ -171,7 +171,7 @@ $$
     end;
 $$;
 
-create or replace function search_Course(vstuid int,vsemid int,vcid varchar,vname varchar,vins varchar,vday varchar
+create or replace function search_Course(vstuid int,vsemid int,vcid varchar,vcname varchar,vinsname varchar,vday varchar
 ,vtime smallint,vloc varchar[],vtype varchar,igfull bool,igcon bool,igpass bool,igpre bool,vpgsize int,vpgidx int)
 returns table(
     "courseId"   varchar,
@@ -182,7 +182,52 @@ returns table(
 ) language plpgsql
 as
 $$
+    declare
+        maj int;
+        validc table(
+            "courseId"   varchar,
+            "courseName" varchar,
+            credit       integer,
+            "classHour"  integer,
+            grading      varchar
+        );
     begin
+        maj:=(select "majorId" from "Student" where "userId"=vstuid);
+        if(vtype='ALL')
+        then
+            validc=(select * from "Course");
+            else if(vtype='MAJOR_COMPULSORY' or vtype='MAJOR_ELECTIVE')
+                then validc=(select * from "Course" join "Major_Course" MC on "Course"."courseId" = MC."courseId" where MC."majorId"=maj and MC.property=vtype);
+                else if(vtype='MAJOR_ELECTIVE')
+                    then validc=(select * from "Course" join "Major_Course" MC on "Course"."courseId" = MC."courseId" where MC."majorId"!=maj);
+                    else if(vtype='PUBLIC')
+                        then validc=(select * from "Course" left join "Major_Course" MC on "Course"."courseId" = MC."courseId" where "majorId" is null);
+                        else raise 'Invalid Search Course Type';
+                        end if;
+                    end if;
+                end if;
+        end if;
+
+
+
+    with res as(
+
+        select * from student_section SS
+            join "CourseSection" CS on SS."sectionId" = CS."sectionId"
+            join "CourseSectionClass" CSC on CS."sectionId" = CSC."sectionId"
+            join "Course" C on CS."courseId" = C."courseId"
+            join "Instructor" Ins on CSC.instructor = Ins."userId"
+        where
+        vstuid=SS."studentId" and vsemid=CS."sectionId"
+        and (vcid is null or vcid=CS."courseId")
+        and (vcname is null or C."courseName"=vcname)
+        and (vinsname is null or vinsname=Ins."firstName"||Ins."lastName")
+        and (vday is null or vday=CSC."dayOfWeek")
+        and (vtime is null or vtime between CSC."classStart" and CSC."classEnd")
+        and (vloc is null or CSC.location in (vloc) )
+        and (igfull or CS."leftCapacity">0)
+    )
+
 
     end;
 $$;

@@ -56,7 +56,27 @@ public class StudentServiceImplementation implements StudentService {
                                                 boolean ignoreFull, boolean ignoreConflict,
                                                 boolean ignorePassed, boolean ignoreMissingPrerequisites,
                                                 int pageSize, int pageIndex) {
-
+        try (Connection connection = SQLDataSource.getInstance().getSQLConnection();
+             PreparedStatement stmt = connection.prepareStatement("select search_Section_Student(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")//todo prerequisite
+        ) {
+            stmt.setInt(1,studentId);
+            stmt.setInt(2,semesterId);
+            stmt.setString(3,searchCid);
+            stmt.setString(4,searchName);
+            stmt.setString(5,searchInstructor);
+            stmt.setString(6,searchDayOfWeek.toString());
+            stmt.setInt(7,searchClassTime);
+            stmt.setArray(8,connection.createArrayOf("varchar",searchClassLocations.toArray()));
+            stmt.setString(9,searchCourseType.toString());
+            stmt.setBoolean(10,ignoreFull);
+            stmt.setBoolean(11,ignoreConflict);
+            stmt.setBoolean(12,ignorePassed);
+            stmt.setBoolean(13,ignoreMissingPrerequisites);
+            stmt.setInt(14,pageSize);
+            stmt.setInt(15,pageIndex);
+        }catch(Exception e){
+            System.out.println(e.getMessage());
+        }
 
         // to do
         return List.of();
@@ -102,6 +122,7 @@ public class StudentServiceImplementation implements StudentService {
                 default:
                     result=EnrollResult.UNKNOWN_ERROR;
             }
+
             //PreparedStatement stmt2 = connection.prepareStatement("select select \"path\",\"level\" from prerequisite where \"courseId\"=?");
 
         }catch(Exception e){
