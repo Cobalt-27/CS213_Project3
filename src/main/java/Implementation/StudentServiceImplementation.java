@@ -42,7 +42,65 @@ public class StudentServiceImplementation implements StudentService {
 
     final String replace = "X";
     final String original = "-";
-
+    public Set<CourseSectionClass> getClass(int sectionId){
+        try (Connection connection = SQLDataSource.getInstance().getSQLConnection();
+             PreparedStatement stmt = connection.prepareStatement("select get_ClassOfSection(?)")//todo prerequisite
+        ) {
+            stmt.setInt(1,sectionId);
+            ResultSet res=stmt.executeQuery();
+            HashSet<CourseSectionClass> ret=new HashSet<>();
+            while(res.next()){
+                CourseSectionClass CSC=new CourseSectionClass();
+                CSC.instructor=getInstructor(res.getInt("userId"));
+                CSC.id=res.getInt("id");
+                CSC.dayOfWeek=res.getArray("dayOfWeek");
+                CSC.classBegin=res.getShort("classBegin");
+                CSC.classEnd=res.getShort("classEnd");
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return null;
+    }
+    public Course getCourseOfSection(int sectionId){
+        return null;
+    }
+    public Instructor getInstructor(int uid){
+        try (Connection connection = SQLDataSource.getInstance().getSQLConnection();
+             PreparedStatement stmt = connection.prepareStatement("select get_Instructor(?)")//todo prerequisite
+        ) {
+            stmt.setInt(1,uid);
+            ResultSet res=stmt.executeQuery();
+            res.next();
+            Instructor ret=new Instructor();
+            ret.fullName=res.getString("firstName")+res.getString("lastName");
+            ret.id=uid;
+            return ret;
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return null;
+    }
+    public List<String> getConflictCourse(int studentId,int sectionId){
+        try (Connection connection = SQLDataSource.getInstance().getSQLConnection();
+             PreparedStatement stmt = connection.prepareStatement("select conflict_Course_Name(?,?)")//todo prerequisite
+        ) {
+            stmt.setInt(1,studentId);
+            stmt.setInt(2,sectionId);
+            ResultSet res=stmt.executeQuery();
+            ArrayList<String> ret=new ArrayList<>();
+            while(res.next()){
+                ret.add(res.getString("name"));
+            }
+            return ret;
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return null;
+    }
+    public CourseSearchEntry getSectionEntry(int sectionId){
+        return null;
+    }
     // to do
     @Override
     public List<CourseSearchEntry> searchCourse(int studentId, int semesterId,
@@ -59,21 +117,37 @@ public class StudentServiceImplementation implements StudentService {
         try (Connection connection = SQLDataSource.getInstance().getSQLConnection();
              PreparedStatement stmt = connection.prepareStatement("select search_Section_Student(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")//todo prerequisite
         ) {
-            stmt.setInt(1,studentId);
-            stmt.setInt(2,semesterId);
-            stmt.setString(3,searchCid);
-            stmt.setString(4,searchName);
-            stmt.setString(5,searchInstructor);
-            stmt.setString(6,searchDayOfWeek.toString());
-            stmt.setInt(7,searchClassTime);
-            stmt.setArray(8,connection.createArrayOf("varchar",searchClassLocations.toArray()));
-            stmt.setString(9,searchCourseType.toString());
-            stmt.setBoolean(10,ignoreFull);
-            stmt.setBoolean(11,ignoreConflict);
-            stmt.setBoolean(12,ignorePassed);
-            stmt.setBoolean(13,ignoreMissingPrerequisites);
+            stmt.setObject(1,studentId);
+            stmt.setObject(2,semesterId);
+            stmt.setObject(3,searchCid);
+            stmt.setObject(4,searchName);
+            stmt.setObject(5,searchInstructor);
+            stmt.setObject(6,searchDayOfWeek!=null?searchDayOfWeek.toString():null);
+            stmt.setObject(7,searchClassTime);
+            stmt.setObject(8,searchClassLocations!=null?connection.createArrayOf("varchar",searchClassLocations.toArray()):null);
+            stmt.setObject(9,searchCourseType!=null?searchCourseType.toString():null);
+            stmt.setObject(10,ignoreFull);
+            stmt.setObject(11,ignoreConflict);
+            stmt.setObject(12,ignorePassed);
+            stmt.setObject(13,ignoreMissingPrerequisites);
             stmt.setInt(14,pageSize);
             stmt.setInt(15,pageIndex);
+            ResultSet res=stmt.executeQuery();
+            List<CourseSearchEntry> ret=new ArrayList<>();
+            while(res.next()){
+                CourseSearchEntry entry=new CourseSearchEntry();
+                int secid=res.getInt("secId");
+                Set<CourseSectionClass> sec_class=new HashSet<>();
+                PreparedStatement stmt2 = connection.prepareStatement("select get_Sections_Class(?)");
+                stmt2.setInt(1,secid);
+                ResultSet res_class=stmt2.executeQuery();
+                while(res_class.next()){
+                    CourseSectionClass CSC=new CourseSectionClass();
+                    CSC.id=res_class.getInt("id");
+                    CSC.instructor=res
+                }
+
+            }
         }catch(Exception e){
             System.out.println(e.getMessage());
         }
@@ -151,7 +225,6 @@ public class StudentServiceImplementation implements StudentService {
             throw new IllegalStateException();
         }
         if(t==1) {
-            //System.out.print('1');
             throw new IllegalStateException();
         }
     }
