@@ -42,9 +42,9 @@ public class StudentServiceImplementation implements StudentService {
 
     final String replace = "X";
     final String original = "-";
-    public Set<CourseSectionClass> getClass(int sectionId){
-        try (Connection connection = SQLDataSource.getInstance().getSQLConnection();
-             PreparedStatement stmt = connection.prepareStatement("select * from get_ClassOfSection(?)")//todo prerequisite
+    public Set<CourseSectionClass> getClass(int sectionId,Connection conn){
+        try (
+             PreparedStatement stmt = conn.prepareStatement("select * from get_ClassOfSection(?)")//todo prerequisite
         ) {
             stmt.setInt(1,sectionId);
             ResultSet res=stmt.executeQuery();
@@ -55,7 +55,7 @@ public class StudentServiceImplementation implements StudentService {
 //                    System.out.println(res.getMetaData().getColumnName(i+1));
 //                }
 
-                CSC.instructor=getInstructor(res.getInt("Instructor"));
+                CSC.instructor=getInstructor(res.getInt("Instructor"),conn);
                 CSC.id=res.getInt("id");
                 CSC.dayOfWeek=DayOfWeek.valueOf(res.getString("dayOfWeek"));
                 //CSC.weekList= new HashSet<Short>(Arrays.stream( ((short[])res.getArray("weekList").getArray())).boxed().toArray( Integer[]::new ));
@@ -72,9 +72,9 @@ public class StudentServiceImplementation implements StudentService {
         }
         return null;
     }
-    public Course getCourseOfSection(int sectionId){
-        try (Connection connection = SQLDataSource.getInstance().getSQLConnection();
-             PreparedStatement stmt = connection.prepareStatement("select * from get_CourseOfSection(?)")//todo prerequisite
+    public Course getCourseOfSection(int sectionId,Connection conn){
+        try (
+             PreparedStatement stmt = conn.prepareStatement("select * from get_CourseOfSection(?)")//todo prerequisite
         ) {
             stmt.setInt(1,sectionId);
             ResultSet res=stmt.executeQuery();
@@ -91,9 +91,9 @@ public class StudentServiceImplementation implements StudentService {
         }
         return null;
     }
-    public Instructor getInstructor(int uid){
-        try (Connection connection = SQLDataSource.getInstance().getSQLConnection();
-             PreparedStatement stmt = connection.prepareStatement("select * from get_Instructor(?)")//todo prerequisite
+    public Instructor getInstructor(int uid,Connection conn){
+        try (
+             PreparedStatement stmt = conn.prepareStatement("select * from get_Instructor(?)")//todo prerequisite
         ) {
             stmt.setInt(1,uid);
             ResultSet res=stmt.executeQuery();
@@ -107,9 +107,9 @@ public class StudentServiceImplementation implements StudentService {
         }
         return null;
     }
-    public List<String> getConflictCourse(int studentId,int sectionId){
-        try (Connection connection = SQLDataSource.getInstance().getSQLConnection();
-             PreparedStatement stmt = connection.prepareStatement("select conflict_Course_Name(?,?)")//todo prerequisite
+    public List<String> getConflictCourse(int studentId,int sectionId,Connection conn){
+        try (
+             PreparedStatement stmt = conn.prepareStatement("select conflict_Course_Name(?,?)")//todo prerequisite
         ) {
             stmt.setInt(1,studentId);
             stmt.setInt(2,sectionId);
@@ -124,9 +124,9 @@ public class StudentServiceImplementation implements StudentService {
         }
         return null;
     }
-    public CourseSection getSection(int sectionId){
-        try (Connection connection = SQLDataSource.getInstance().getSQLConnection();
-             PreparedStatement stmt = connection.prepareStatement("select * from \"CourseSection\" where \"sectionId\"=?")//todo prerequisite
+    public CourseSection getSection(int sectionId,Connection conn){
+        try (
+             PreparedStatement stmt = conn.prepareStatement("select * from \"CourseSection\" where \"sectionId\"=?")//todo prerequisite
         ) {
             stmt.setInt(1,sectionId);
             CourseSection ret=new CourseSection();
@@ -142,12 +142,17 @@ public class StudentServiceImplementation implements StudentService {
         }
         return null;
     }
-    public CourseSearchEntry getSectionEntry(int studentId,int sectionId){
+    public CourseSearchEntry getSectionEntry(int studentId,int sectionId,Connection conn){
+        System.out.print('a');
         CourseSearchEntry ret=new CourseSearchEntry();
-        ret.conflictCourseNames=getConflictCourse(studentId, sectionId);
-        ret.course=getCourseOfSection(sectionId);
-        ret.sectionClasses=getClass(sectionId);
-        ret.section=getSection(sectionId);
+        ret.conflictCourseNames=getConflictCourse(studentId, sectionId,conn);
+        System.out.print('b');
+        ret.course=getCourseOfSection(sectionId,conn);
+        System.out.print('c');
+        ret.sectionClasses=getClass(sectionId,conn);
+        System.out.print('d');
+        ret.section=getSection(sectionId,conn);
+        System.out.print('e');
         return ret;
     }
 
@@ -169,8 +174,11 @@ public class StudentServiceImplementation implements StudentService {
                                                 boolean ignorePassed, boolean ignoreMissingPrerequisites,
                                                 int pageSize, int pageIndex) {
         try (Connection connection = SQLDataSource.getInstance().getSQLConnection();
-             PreparedStatement stmt = connection.prepareStatement("select search_Section_Student(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")//todo prerequisite
+
         ) {
+            System.out.println("oA ");
+            PreparedStatement stmt = connection.prepareStatement("select search_Section_Student(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+            System.out.println("oB ");
             stmt.setObject(1,studentId);
             stmt.setObject(2,semesterId);
             stmt.setObject(3,searchCid);
@@ -186,13 +194,25 @@ public class StudentServiceImplementation implements StudentService {
             stmt.setObject(13,ignoreMissingPrerequisites);
             stmt.setInt(14,pageSize);
             stmt.setInt(15,pageIndex);
+            System.out.println("oC ");
             ResultSet res=stmt.executeQuery();
+            System.out.println("oD ");
             List<CourseSearchEntry> ret=new ArrayList<>();
+            List<Integer> secargs=new ArrayList<>();
             while(res.next()){
-                //System.out.println(res.getMetaData().getColumnName(1));
                 int secid=res.getInt("search_section_student");
-                CourseSearchEntry entry=getSectionEntry(studentId,secid);
-                ret.add(entry);
+                secargs.add(secid);
+            }
+            System.out.println("oE ");
+            for(int secid:secargs){
+                //System.out.println(res.getMetaData().getColumnName(1));
+//                System.out.print("oa ");
+
+                System.out.print("ob ");
+                //CourseSearchEntry entry=getSectionEntry(studentId,secid,connection);
+                System.out.print("oc ");
+                //ret.add(entry);
+                System.out.print("od ");
             }
             return ret;
         }catch(Exception e){
