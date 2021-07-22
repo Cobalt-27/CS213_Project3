@@ -297,7 +297,17 @@ $$
 
     end
 $$;
+create or replace function get_CourseOfSection(vsecid int)
+returns setof "Course" language plpgsql
+as $$
+begin
 
+   return query(
+       with sec as (select * from "CourseSection" where "sectionId"=vsecid)
+       select * from "Course" where "courseId"=sec."courseId"
+   );
+end
+$$;
 
 -- secid in secclass out
 create or replace function get_ClassOfSection(vsecid int)
@@ -319,15 +329,4 @@ begin
     return query(select  * from "Instructor" where "userId"=vinsid);
 
 end;
-$$;
-
--- secid in course out
-create or replace function get_Sections_Course(vsecid int)
-returns setof "Course" language plpgsql
-as $$
-begin
-    return query( select (C."courseId","courseName",credit,"classHour",grading)
-    from "Course" C join "CourseSection" on C."courseId" = "CourseSection"."courseId"
-    where "sectionId"=vsecid);
-end
 $$;

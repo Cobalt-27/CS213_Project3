@@ -44,17 +44,27 @@ public class StudentServiceImplementation implements StudentService {
     final String original = "-";
     public Set<CourseSectionClass> getClass(int sectionId){
         try (Connection connection = SQLDataSource.getInstance().getSQLConnection();
-             PreparedStatement stmt = connection.prepareStatement("select get_ClassOfSection(?)")//todo prerequisite
+             PreparedStatement stmt = connection.prepareStatement("select * from get_ClassOfSection(?)")//todo prerequisite
         ) {
             stmt.setInt(1,sectionId);
             ResultSet res=stmt.executeQuery();
             HashSet<CourseSectionClass> ret=new HashSet<>();
             while(res.next()){
                 CourseSectionClass CSC=new CourseSectionClass();
-                CSC.instructor=getInstructor(res.getInt("userId"));
+//                for(int i=0;i<res.getMetaData().getColumnCount();i++) {
+//                    System.out.println(res.getMetaData().getColumnName(i+1));
+//                }
+
+                CSC.instructor=getInstructor(res.getInt("Instructor"));
                 CSC.id=res.getInt("id");
-                CSC.dayOfWeek=res.getArray("dayOfWeek");
-                CSC.classBegin=res.getShort("classBegin");
+                CSC.dayOfWeek=DayOfWeek.valueOf(res.getString("dayOfWeek"));
+                //CSC.weekList= new HashSet<Short>(Arrays.stream( ((short[])res.getArray("weekList").getArray())).boxed().toArray( Integer[]::new ));
+                HashSet<Short> hs =new HashSet<>();
+                for(Short a : (Short[])res.getArray("weekList").getArray()){
+                    hs.add(a);
+                }
+                CSC.weekList=hs;
+                CSC.classBegin=res.getShort("classStart");
                 CSC.classEnd=res.getShort("classEnd");
             }
         }catch (Exception e){
@@ -63,11 +73,27 @@ public class StudentServiceImplementation implements StudentService {
         return null;
     }
     public Course getCourseOfSection(int sectionId){
+        try (Connection connection = SQLDataSource.getInstance().getSQLConnection();
+             PreparedStatement stmt = connection.prepareStatement("select * from get_CourseOfSection(?)")//todo prerequisite
+        ) {
+            stmt.setInt(1,sectionId);
+            ResultSet res=stmt.executeQuery();
+            res.next();
+            Course ret=new Course();
+            ret.id=res.getString("courseId");
+            ret.classHour=res.getInt("classHour");
+            ret.name=res.getString("courseName");
+            ret.credit=res.getInt("credit");
+            ret.grading=res.getString("grading")=="HUNDRED_MARK_SCORE"? Course.CourseGrading.HUNDRED_MARK_SCORE: Course.CourseGrading.PASS_OR_FAIL;
+            return ret;
+        }catch (Exception e){
+            e.printStackTrace();
+        }
         return null;
     }
     public Instructor getInstructor(int uid){
         try (Connection connection = SQLDataSource.getInstance().getSQLConnection();
-             PreparedStatement stmt = connection.prepareStatement("select get_Instructor(?)")//todo prerequisite
+             PreparedStatement stmt = connection.prepareStatement("select * from get_Instructor(?)")//todo prerequisite
         ) {
             stmt.setInt(1,uid);
             ResultSet res=stmt.executeQuery();
@@ -90,7 +116,7 @@ public class StudentServiceImplementation implements StudentService {
             ResultSet res=stmt.executeQuery();
             ArrayList<String> ret=new ArrayList<>();
             while(res.next()){
-                ret.add(res.getString("name"));
+                ret.add(res.getString("conflict_Course_Name"));
             }
             return ret;
         }catch (Exception e){
@@ -98,9 +124,37 @@ public class StudentServiceImplementation implements StudentService {
         }
         return null;
     }
-    public CourseSearchEntry getSectionEntry(int sectionId){
+    public CourseSection getSection(int sectionId){
+        try (Connection connection = SQLDataSource.getInstance().getSQLConnection();
+             PreparedStatement stmt = connection.prepareStatement("select * from \"CourseSection\" where \"sectionId\"=?")//todo prerequisite
+        ) {
+            stmt.setInt(1,sectionId);
+            CourseSection ret=new CourseSection();
+            ResultSet res=stmt.executeQuery();
+            res.next();
+            ret.id=res.getInt("sectionId");
+            ret.totalCapacity=res.getInt("totalCapacity");
+            ret.leftCapacity=res.getInt("leftCapacity");
+            ret.name=res.getString("sectionName");
+            return ret;
+        }catch (Exception e){
+            e.printStackTrace();
+        }
         return null;
     }
+    public CourseSearchEntry getSectionEntry(int studentId,int sectionId){
+        CourseSearchEntry ret=new CourseSearchEntry();
+        ret.conflictCourseNames=getConflictCourse(studentId, sectionId);
+        ret.course=getCourseOfSection(sectionId);
+        ret.sectionClasses=getClass(sectionId);
+        ret.section=getSection(sectionId);
+        return ret;
+    }
+
+
+
+
+
     // to do
     @Override
     public List<CourseSearchEntry> searchCourse(int studentId, int semesterId,
@@ -135,25 +189,18 @@ public class StudentServiceImplementation implements StudentService {
             ResultSet res=stmt.executeQuery();
             List<CourseSearchEntry> ret=new ArrayList<>();
             while(res.next()){
-                CourseSearchEntry entry=new CourseSearchEntry();
-                int secid=res.getInt("secId");
-                Set<CourseSectionClass> sec_class=new HashSet<>();
-                PreparedStatement stmt2 = connection.prepareStatement("select get_Sections_Class(?)");
-                stmt2.setInt(1,secid);
-                ResultSet res_class=stmt2.executeQuery();
-                while(res_class.next()){
-                    CourseSectionClass CSC=new CourseSectionClass();
-                    CSC.id=res_class.getInt("id");
-                    CSC.instructor=res
-                }
-
+                //System.out.println(res.getMetaData().getColumnName(1));
+                int secid=res.getInt("search_section_student");
+                CourseSearchEntry entry=getSectionEntry(studentId,secid);
+                ret.add(entry);
             }
+            return ret;
         }catch(Exception e){
             System.out.println(e.getMessage());
         }
 
         // to do
-        return List.of();
+        return null;
     }
 
     // to do
