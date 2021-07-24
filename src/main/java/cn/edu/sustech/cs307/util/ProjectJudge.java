@@ -1,5 +1,6 @@
 package cn.edu.sustech.cs307.util;
 
+import Implementation.StudentServiceImplementation;
 import cn.edu.sustech.cs307.config.Config;
 import cn.edu.sustech.cs307.dto.*;
 import cn.edu.sustech.cs307.dto.grade.Grade;
@@ -55,9 +56,25 @@ public final class ProjectJudge {
                     .collect(Collectors.toUnmodifiableList());
             result.elapsedTimeNs.addAndGet(System.nanoTime() - beforeTime);
             result.passCount.addAndGet(IntStream.range(0, searchCourseParams.size()).parallel()
-                    .filter(it -> (searchCourseExpected.get(it).equals(searchCourseResult.get(it)))).count());
+//                    .filter(it -> (searchCourseExpected.get(it).equals(searchCourseResult.get(it)))).count());
+                    .filter(it -> Comp(searchCourseExpected.get(it),searchCourseResult.get(it))).count());
         }
         return result;
+    }
+    public boolean Comp(List<CourseSearchEntry> a,List<CourseSearchEntry> b){
+//        if(a.size()!=0){
+//            System.out.println(a.size());
+//        }
+        if(a.equals(b))
+            return true;
+        else{
+            for(int i=0;i<a.size();i++) {
+//                System.out.println(a.get(i).course);
+//                if(i<b.size())
+//                    System.out.println("B "+b.get(i).course);
+            }
+            return false;
+        }
     }
 //    public boolean SearchCourseJ(List<CourseSearchEntry it>){
 //        searchCourseExpected.get(it).equals(searchCourseResult.get(it)

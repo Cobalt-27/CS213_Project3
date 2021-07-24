@@ -143,6 +143,20 @@ returns void language plpgsql
 as
 $$
     begin
+        if((select grading from "Course" join "CourseSection" CS on "Course"."courseId" = CS."courseId"
+            where CS."sectionId"=vsecid)
+            ='HUNDRED_MARK_SCORE')
+        then
+            if(vgrade is not null and vgrade !~'^([0-9]+[.]?[0-9]*|[.][0-9]+)$')
+                then
+                return;
+            end if;
+        else
+            if(vgrade is not null and vgrade!='PASS' and vgrade !='FAIL')
+                then
+                return;
+            end if;
+        end if;
         if((select count(*) from student_section where "studentId"=vstuid and "sectionId"=vsecid)=0)
             then insert into student_section("studentId", "sectionId", grade) values (vstuid,vsecid,vgrade);
             else
@@ -225,13 +239,16 @@ begin
      cid:=(select "courseId" from "CourseSection" where "sectionId"=vsecid);
     if((select count(*) from student_section ssec join "CourseSection" CS on ssec."sectionId" = CS."sectionId" where ssec."studentId"=vstuid and "courseId"=cid)>0)
         then grad=(select grade from student_section ssec join "CourseSection" CS on ssec."sectionId" = CS."sectionId" where ssec."studentId"=vstuid and "courseId"=cid);
-            if(grad='PASS' or cast(grad as integer)>=60)
+            if(grad='PASS' )
                 then return true;
+            else if((grad ~ '^([0-9]+[.]?[0-9]*|[.][0-9]+)$'))
+                then if(cast(grad as integer)>=60) then return true; end if;
+
+            end if;
             end if;
         end if;
     return false;
 end
-
 $$;
 
 create or replace function section_Fullname(vsecid int)
@@ -250,14 +267,14 @@ $$;
 create or replace function search_Section_Student(vstuid int,vsemid int,vcid varchar,vcname varchar,vinsname varchar,vday varchar
 ,vtime smallint,vloc varchar[],vtype varchar,igfull bool,igcon bool,igpass bool,igpre bool,vpgsize int,vpgidx int)
 returns table(
-    "secId"   int
+    sectionid   int
 ) language plpgsql
 as
 $$
     declare
         maj int;
     begin
-
+--     return query(select "sectionId" from student_section);
         maj:=(select "majorId" from "Student" where "userId"=vstuid);
 --         if(vtype='ALL')
 --         then
@@ -273,51 +290,64 @@ $$
 --                     end if;
 --                 end if;
 --         end if;
-
+    return query(
     with res as(
+        select CS."sectionId",CS."courseId", section_Fullname(CS."sectionId") as name from "CourseSection" CS
+            left join student_section SS on CS."sectionId" = ss."sectionId"
+            left join "CourseSectionClass" CSC on CS."sectionId" = CSC."sectionId"
+                                                 and (vcid is null or vcid=CS."courseId")
+                                           and (igfull or CS."leftCapacity">0)
+                                           and (vcname is null or section_Fullname(CS."sectionId")=vcname)
+                                            and CS."semesterId"=vsemid
 
-        select * from student_section SS
-            join "CourseSection" CS on SS."sectionId" = CS."sectionId"
-            join "CourseSectionClass" CSC on CS."sectionId" = CSC."sectionId"
-            join "Course" C on CS."courseId" = C."courseId"
-            join "Instructor" Ins on CSC.instructor = Ins."userId"
-        where
---         vstuid=SS."studentId" and vsemid=CS."sectionId"
-        (vcid is null or vcid=CS."courseId")
-        and (vcname is null or section_Fullname(CS."sectionId")=vcname or (Ins."firstName"||' '||Ins."lastName")=vcname or Ins."firstName"=vcname or Ins."lastName"=vcname)
-        and (vinsname is null or vinsname=Ins."firstName"||Ins."lastName")
-        and (vday is null or vday=CSC."dayOfWeek")
-        and (vtime is null or vtime between CSC."classStart" and CSC."classEnd")
-        and (vloc is null or CSC.location in (vloc) )
-        and (igfull or CS."leftCapacity">0)
+                                                 and (vday is null or vday=CSC."dayOfWeek")
+                                                 and (vtime is null or vtime between CSC."classStart"and CSC."classEnd")
+                                                and (vloc is null or (CSC.location=any (vloc)) )
+
+            left join "Instructor" Ins on CSC.instructor = Ins."userId"
+                         and (vinsname is null or (Ins."firstName"||' '||Ins."lastName")=vcname or Ins."firstName"=vcname or Ins."lastName"=vcname or (Ins."firstName"||Ins."lastName")=vcname)
+
+
+        where (igpre or passed_prerequisites_for_course(vstuid,CS."courseId",null,0))
+
         and (igcon or (select count(*) from conflict_Course_Name(vstuid,SS."sectionId"))=0)
         and (igpass or pass_Or_Not(vstuid,SS."sectionId"))
-        and (igpre or passed_prerequisites_for_course(vstuid,CS."courseId",null,0))
-    ) select res."sectionId" as secid limit vpgsize offset vpgsize*vpgidx;
+
+    ) select res."sectionId" as sectionid from res
+    order by res."courseId",res.name
+--     limit vpgsize offset vpgsize*vpgidx
+        );
 
     end
 $$;
+
+
+
 create or replace function get_CourseOfSection(vsecid int)
 returns setof "Course" language plpgsql
 as $$
+    declare cid varchar;
 begin
+    cid:=(select "courseId" from "CourseSection" where "sectionId"=vsecid);
 
    return query(
        with sec as (select * from "CourseSection" where "sectionId"=vsecid)
-       select * from "Course" where "courseId"=sec."courseId"
+       select * from "Course"
+       where "courseId"=cid
    );
 end
 $$;
 
+--drop function get_CourseOfSection(vsecid int);
 -- secid in secclass out
 create or replace function get_ClassOfSection(vsecid int)
 returns setof "CourseSectionClass" language  plpgsql
 as $$
 begin
    return query(
-       select (id,instructor,"dayOfWeek",location,"weekList",CS."sectionId","classStart","classEnd")
-       from "CourseSection" CS join "CourseSectionClass" CSC on CS."sectionId" = CSC."sectionId"
-       where CS."sectionId"=vsecid
+       select *
+       from "CourseSectionClass" CSC
+       where CSC."sectionId"=vsecid
    );
 end
 $$;
@@ -327,6 +357,55 @@ returns setof "Instructor" language plpgsql
 as $$
 begin
     return query(select  * from "Instructor" where "userId"=vinsid);
-
 end;
 $$;
+
+create or replace function get_SemFromTime(vdate date)
+returns setof "Semester" language  plpgsql
+as $$
+    begin
+    return query(select * from "Semester" S where vdate between  S.begin and S."end");
+    end
+$$;
+
+-- drop function get_table_class(vstuid integer, vsemid integer, vweek smallint);
+
+create or replace function get_Table_class(vstuid int,vdate date)
+returns table(
+    fullname varchar,
+    ins int,
+    dayofweek varchar,
+    classbegin smallint,
+    classend smallint,
+    loc varchar,
+    insname varchar,
+    insid int
+)language plpgsql
+as $$
+    declare
+        semid int;
+        sembegin date;
+        week smallint;
+begin
+    semid=(select S.id from "Semester" S where vdate between  S.begin and S."end");
+    sembegin=(select S.begin from "Semester" S where vdate between  S.begin and S."end");
+    week=((vdate-sembegin)/7)::smallint;
+    if((vdate-sembegin)%7!=0)
+    then week=week+1;
+    end if;
+
+    return query(
+      select section_fullname(SC."sectionId")::varchar,CSC.instructor,CSC."dayOfWeek",CSC."classStart",CSC."classEnd",CSC.location,(I."firstName"||I."lastName")::varchar,I."userId" from student_section SC
+        join "CourseSection" CS on SC."sectionId"=CS."sectionId"
+        join "CourseSectionClass" CSC on SC."sectionId"=CSC."sectionId"
+        join "Instructor" I on CSC.instructor = I."userId"
+        where SC."studentId"=vstuid and week=any(CSC."weekList")
+        and semid=CS."semesterId"
+    );
+end
+$$;
+-- select * from get_CourseOfSection(111111);
+--
+-- select * from get_Instructor(111)
+-- select * from search_Section_Student(null,null,null,null,null,null,null,null,null,null,null,null,null,null,null);
+select * from get_table_class(1,null)
