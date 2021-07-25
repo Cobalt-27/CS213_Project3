@@ -368,7 +368,8 @@ as $$
     end
 $$;
 
--- drop function get_table_class(vstuid integer, vsemid integer, vweek smallint);
+-- drop function get_table_class(vstuid integer, vdate date);
+
 
 create or replace function get_Table_class(vstuid int,vdate date)
 returns table(
@@ -378,7 +379,8 @@ returns table(
     classbegin smallint,
     classend smallint,
     loc varchar,
-    insname varchar,
+    insfirstname varchar,
+    inslastname varchar,
     insid int
 )language plpgsql
 as $$
@@ -389,16 +391,16 @@ as $$
 begin
     semid=(select S.id from "Semester" S where vdate between  S.begin and S."end");
     sembegin=(select S.begin from "Semester" S where vdate between  S.begin and S."end");
-    week=((vdate-sembegin)/7)::smallint;
-    if((vdate-sembegin)%7!=0)
-    then week=week+1;
-    end if;
+    week=(((vdate-sembegin)/7)+1)::smallint;
+--     if((vdate-sembegin)%7!=0)
+--     then week=week+1;
+--     end if;
 
     return query(
-      select section_fullname(SC."sectionId")::varchar,CSC.instructor,CSC."dayOfWeek",CSC."classStart",CSC."classEnd",CSC.location,(I."firstName"||I."lastName")::varchar,I."userId" from student_section SC
+      select section_fullname(SC."sectionId")::varchar,CSC.instructor,CSC."dayOfWeek",CSC."classStart",CSC."classEnd",CSC.location,I."firstName",I."lastName",I."userId" from student_section SC
         join "CourseSection" CS on SC."sectionId"=CS."sectionId"
         join "CourseSectionClass" CSC on SC."sectionId"=CSC."sectionId"
-        join "Instructor" I on CSC.instructor = I."userId"
+        left join "Instructor" I on CSC.instructor = I."userId"
         where SC."studentId"=vstuid and week=any(CSC."weekList")
         and semid=CS."semesterId"
     );

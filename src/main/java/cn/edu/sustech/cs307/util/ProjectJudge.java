@@ -57,25 +57,25 @@ public final class ProjectJudge {
             result.elapsedTimeNs.addAndGet(System.nanoTime() - beforeTime);
             result.passCount.addAndGet(IntStream.range(0, searchCourseParams.size()).parallel()
 //                    .filter(it -> (searchCourseExpected.get(it).equals(searchCourseResult.get(it)))).count());
-                    .filter(it -> Comp(searchCourseExpected.get(it),searchCourseResult.get(it))).count());
+                    .filter(it -> searchCourseExpected.get(it).equals(searchCourseResult.get(it))).count());
         }
         return result;
     }
-    public boolean Comp(List<CourseSearchEntry> a,List<CourseSearchEntry> b){
-//        if(a.size()!=0){
-//            System.out.println(a.size());
+//    public boolean Comp(List<CourseSearchEntry> a,List<CourseSearchEntry> b){
+////        if(a.size()!=0){
+////            System.out.println(a.size());
+////        }
+//        if(a.equals(b))
+//            return true;
+//        else{
+////            for(int i=0;i<a.size();i++) {
+//////                System.out.println(a.get(i).course);
+//////                if(i<b.size())
+//////                    System.out.println("B "+b.get(i).course);
+////            }
+//            return false;
 //        }
-        if(a.equals(b))
-            return true;
-        else{
-            for(int i=0;i<a.size();i++) {
-//                System.out.println(a.get(i).course);
-//                if(i<b.size())
-//                    System.out.println("B "+b.get(i).course);
-            }
-            return false;
-        }
-    }
+//    }
 //    public boolean SearchCourseJ(List<CourseSearchEntry it>){
 //        searchCourseExpected.get(it).equals(searchCourseResult.get(it)
 //        return false;
@@ -124,10 +124,10 @@ public final class ProjectJudge {
                 if (expected == result) {
                     evalResult.passCount.incrementAndGet();
                 }
-                else{
-
-                    System.out.println(i+" "+expected+" "+result);
-                }
+//                else{
+//
+//                    System.out.println(i+" "+expected+" "+result);
+//                }
                 if (expected == StudentService.EnrollResult.SUCCESS) {
                     evalResult.succeedSections.add(enrollCourseParams.get(i));
                 }
@@ -173,6 +173,29 @@ public final class ProjectJudge {
             result.elapsedTimeNs.addAndGet(System.nanoTime() - beforeTime);
             result.passCount.addAndGet(IntStream.range(0, courseTableParams.size()).parallel()
                     .filter(it -> courseTableExpected.get(it).equals(courseTableResults.get(it))).count());
+
+//            for(int i=0;i<courseTableExpected.size();i++){
+//                CourseTable exp=courseTableExpected.get(i);
+//                CourseTable got=courseTableResults.get(i);
+//                if(!exp.equals(got)){
+//                    System.out.println("Table check "+i);
+//                    exp.printToScreen();;
+//                    System.out.println("get");
+//                    got.printToScreen();
+//                    if(true){
+//                        for(DayOfWeek d:DayOfWeek.values()){
+//                            System.out.println(d.toString()+" "+exp.table.get(d).equals(got.table.get(d)));
+//                            for(CourseTable.CourseTableEntry entry:exp.table.get(d)){
+//                                System.out.printf("%s %s %s\n",entry.instructor.fullName,entry.courseFullName,entry.location);
+//                            }
+//                            System.out.println("get class");
+//                            for(CourseTable.CourseTableEntry entry:got.table.get(d)){
+//                                System.out.printf("%s %s %s\n",entry.instructor.fullName,entry.courseFullName,entry.location);
+//                            }
+//                        }
+//                    }
+//                }
+//            }
         }
         return result;
     }

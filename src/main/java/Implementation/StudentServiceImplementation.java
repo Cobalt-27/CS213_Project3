@@ -30,7 +30,11 @@ public class StudentServiceImplementation implements StudentService {
              PreparedStatement stmt = connection.prepareStatement("select add_Student(?,?,?,?,?,?)")//todo prerequisite
         ) {
             stmt.setInt(1,userId);
-            stmt.setString(2,firstName+" "+lastName);
+            String name=firstName+lastName;
+            if(firstName.matches("^[a-zA-Z ]*$")&&lastName.matches("^[a-zA-Z ]*$")){
+                name=firstName+" "+lastName;
+            }
+            stmt.setString(2,name);
             stmt.setDate(3,enrolledDate);
             stmt.setInt(4,majorId);
             stmt.setString(5,firstName);
@@ -349,14 +353,9 @@ public class StudentServiceImplementation implements StudentService {
             stmt2.setInt(1,studentId);
             stmt2.setDate(2,date);
             ResultSet res=stmt2.executeQuery();
-
-            ctable.table.put(DayOfWeek.MONDAY,new HashSet<>());
-            ctable.table.put(DayOfWeek.TUESDAY,new HashSet<>());
-            ctable.table.put(DayOfWeek.WEDNESDAY,new HashSet<>());
-            ctable.table.put(DayOfWeek.THURSDAY,new HashSet<>());
-            ctable.table.put(DayOfWeek.FRIDAY,new HashSet<>());
-            ctable.table.put(DayOfWeek.SATURDAY,new HashSet<>());
-            ctable.table.put(DayOfWeek.SUNDAY,new HashSet<>());
+            for(DayOfWeek d :DayOfWeek.values()) {
+                ctable.table.put(d, new HashSet<>());
+            }
 
             while(res.next()){
                 String name=res.getString("fullname");
@@ -366,10 +365,15 @@ public class StudentServiceImplementation implements StudentService {
                 short classbegin=res.getShort("classbegin");
                 short classend=res.getShort("classend");
                 String loc=res.getString("loc");
-                String insname=res.getString("insname");
+                String insfirstname=res.getString("insfirstname");
+                String inslastname=res.getString("inslastname");
                 int insid=res.getInt("insid");
                 Instructor instructor=new Instructor();
                 instructor.id=insid;
+                String insname=insfirstname+inslastname;
+                if(insfirstname.matches("^[a-zA-Z ]*$")&&inslastname.matches("^[a-zA-Z ]*$")){
+                    insname=insfirstname+" "+inslastname;
+                }
                 instructor.fullName=insname;
                 CourseTable.CourseTableEntry entry=new CourseTable.CourseTableEntry();
                 entry.courseFullName=name;
@@ -388,14 +392,5 @@ public class StudentServiceImplementation implements StudentService {
 
 
     }
-    public String getDay(Date date){
-        String[] name={"MONDAY","TUESDAY","WEDNESDAY","THURSDAY","FRIDAY","SATURDAY","SUNDAY"};
-        Calendar cal=Calendar.getInstance();
-        int d = cal.get(Calendar.DAY_OF_WEEK) - 1;
-        if (d < 0)
-            d = 0;
-        return name[d];
-    }
-
 
 }

@@ -1,6 +1,7 @@
 package cn.edu.sustech.cs307.dto;
 
 import java.time.DayOfWeek;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -34,9 +35,14 @@ public class CourseTable {
                 return false;
             }
             CourseTableEntry entry = (CourseTableEntry) o;
-            return classBegin == entry.classBegin && classEnd == entry.classEnd && courseFullName
+
+            boolean res= classBegin == entry.classBegin && classEnd == entry.classEnd && courseFullName
                     .equals(entry.courseFullName)
                     && instructor.equals(entry.instructor) && location.equals(entry.location);
+//            if(!res){
+//                System.out.printf("Entry not equal %s %s\n",this.courseFullName,entry.courseFullName);
+//            }
+            return res;
         }
 
         @Override
@@ -60,8 +66,26 @@ public class CourseTable {
             return false;
         }
         CourseTable that = (CourseTable) o;
+//        if(!table.equals(that.table)){
+////            System.out.println("Expeceted");
+////            this.printToScreen();
+////            System.out.println("Got");
+////            that.printToScreen();
+//        }
         return table.equals(that.table);
     }
+//    public void printToScreen(){
+//        for(DayOfWeek day:DayOfWeek.values()){
+//            if(table.get(day)==null){
+//                System.out.println("NULL FOUND");
+//            }
+//            for(CourseTableEntry classinday:table.get(day)) {
+//                System.out.print(classinday.courseFullName+" ");
+//            }
+//            System.out.print("\n");
+//        }
+////        System.out.println("\n");
+//    }
 
     @Override
     public int hashCode() {
